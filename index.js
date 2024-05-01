@@ -8,7 +8,9 @@ app.use(cors());
 app.use(bodyParser.json());
 
 const userRouter = require('./routes/users')
+const productRouter = require('./routes/products')
 app.use('/users', userRouter);
+app.use('/products', productRouter);
 
 // Start the server
 app.listen(port, () => {

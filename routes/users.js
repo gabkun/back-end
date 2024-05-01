@@ -4,6 +4,7 @@ const app = express();
 const mysql = require('mysql');
 const bodyParser = require('body-parser');
 
+
 // Create MySQL connection
 const db = mysql.createConnection({
     host: 'localhost',
@@ -25,21 +26,21 @@ const db = mysql.createConnection({
 
   
   //newuser
-  router.post('/', (req, res) => {
+  router.post('/create', (req, res) => {
     
-    const { username, password} = req.body;
-    console.log(username, password);
-    const sql = 'INSERT INTO tbl_users (username, password) VALUES (?, ?)';
+    const { username, email, password} = req.body;
+    console.log(username, email, password);
+    const sql = 'INSERT INTO tbl_users (username, email, password) VALUES (?, ?, ?)';
   
-    db.query(sql, [username, password], (err, results) => {
+    db.query(sql, [username, email, password], (err, results) => {
       if (err) throw err;
-      res.json({ id: results.insertId, username, password });
+      res.json({ id: results.insertId, username, email, password });
     });
   });
   
   
   // view
-  router.get('/', (req, res) => {
+  router.get('/getusers', (req, res) => {
     db.query('SELECT * FROM tbl_users', (err, results) => {
       if (err) throw err;
       res.json(results);
@@ -48,10 +49,10 @@ const db = mysql.createConnection({
 
   // Express Login Route (auth.js)
 router.post('/login', (req, res) => {
-    const {username, password } = req.body;
-    const sql = 'SELECT * FROM tbl_users WHERE username = ? AND password = ?';
+    const {email, password } = req.body;
+    const sql = 'SELECT * FROM tbl_users WHERE email = ? AND password = ?';
   
-    db.query(sql, [username, password], (err, results) => {
+    db.query(sql, [email, password], (err, results) => {
       if (err) throw err;
   
       if (results.length > 0) {
@@ -59,7 +60,7 @@ router.post('/login', (req, res) => {
         res.json({ message: 'Login successful' });
       } else {
         // User not found or invalid credentials
-        res.status(401).json({ error: 'Invalid username or password' });
+        res.status(401).json({ error: 'Invalid email or password' });
       }
     });
   });
@@ -107,5 +108,6 @@ router.post('/login', (req, res) => {
 //         }
 //       });
 //   });
+
 
 module.exports = router;
