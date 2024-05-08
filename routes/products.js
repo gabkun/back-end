@@ -36,28 +36,46 @@ const upload = multer({ storage });
 // Serve images statically
 router.use( express.static('public'));
 
-router.post('/addproduct', upload.single('file'), (req, res) => {
+router.post('/:clientId/addproduct', upload.single('file'), (req, res) => {
+    const clientId = req.params.clientId;
     if (!req.file) {
         return res.status(400).json({ error: 'No file uploaded' });
+
     }
 
-    const sql = "INSERT INTO tbl_products (`product`,`brand`,`model`, `price`,`image`) VALUES (?)";
-    const values = [
-        req.body.product,
-        req.body.brand,
-        req.body.model,
-        req.body.price,
-        req.file.filename
-    ];
 
-    con.query(sql, [values], (err, result) => {
+    const getProductSQL = "SELECT * FROM tbl_clients WHERE clientid = ?";
+    
+    con.query(getProductSQL, [clientId], (err, result) => {
         if (err) {
             console.error('Error executing SQL:', err);
             return res.status(500).json({ error: 'Error executing SQL' });
         }
-        return res.status(200).json({ status: 'Success' });
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'Client not found' });
+        }
+
+        const clientid = result[0].clientid;
+
+        const insertProductSQL = "INSERT INTO tbl_products (clientid, product, brand, model, price, image) VALUES (?, ?, ?, ?, ?, ?)";
+        const values = [
+
+            clientid, // Use the fetched client ID
+            req.body.product,
+            req.body.brand,
+            req.body.model,
+            req.body.price,
+            req.file.filename
+        ];
+
+        con.query(insertProductSQL, values, (err, result) => {
+            if (err) {
+                console.error('Error executing SQL:', err);
+                return res.status(500).json({ error: 'Error executing SQL' });
+            }
+            return res.status(200).json({ status: 'Success' });
+        });
     });
-    
 });
 
 router.get('/getproducts', (req, res) => {
@@ -71,6 +89,31 @@ router.get('/getproducts', (req, res) => {
         return res.status(200).json(result);
     });
 });
+
+
+
+router.get('/getproducts/:clientId', (req, res) => {
+    const clientId = req.params.clientId;
+  
+    // Query the database to fetch client data by client ID
+    const sql = 'SELECT * FROM tbl_products WHERE clientid = ?';
+    con.query(sql, [clientId], (err, results) => {
+      if (err) {
+        console.error('Error fetching client data:', err);
+        return res.status(500).json({ error: 'An error occurred' });
+      }
+  
+      // Check if client exists
+      if (results.length === 0) {
+        return res.status(404).json({ error: 'Client not found' });
+      }
+  
+      // Return client data
+      const clientData = results[0];
+      res.json(clientData);
+    });
+  });
+
 
 router.delete('/deleteproduct/:productId', (req, res) => {
     const productId = req.params.productId;
@@ -89,6 +132,7 @@ router.delete('/deleteproduct/:productId', (req, res) => {
         return res.status(200).json({ status: 'Success' });
     });
 });
+
 
 router.put('/updateproduct/:productId', upload.single('file'), (req, res) => {
     const productId = req.params.productId;
